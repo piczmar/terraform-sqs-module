@@ -67,3 +67,6 @@ I've tested it with the following provider versions:
 * provider.template: version = "~> 2.1"
 ```
 
+
+[Here](debug.output) is Terraform debug outout.
+
