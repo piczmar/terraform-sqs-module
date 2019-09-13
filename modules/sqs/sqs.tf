@@ -36,17 +36,6 @@ resource "aws_sqs_queue" "dead_letter_queue" {
 #-----------------------------------
 #    Regular Queue
 #-----------------------------------
-data "template_file" "regular_queue_redrive_policy" {
-  count = var.attach_dead_letter_config ? 1 : 0
-
-  template   = file("${path.module}/queue-redrive-policy.json.tpl")
-  depends_on = [
-    "aws_sqs_queue.dead_letter_queue"]
-  vars       = {
-    dead_letter_target_arn = aws_sqs_queue.dead_letter_queue[count.index].arn
-    max_receive_count      = var.max_receive_count
-  }
-}
 resource "aws_sqs_queue" "regular_queue" {
   count = var.attach_dead_letter_config ? 0 : 1
 
@@ -64,7 +53,11 @@ resource "aws_sqs_queue" "regular_queue_with_dl" {
 
   name                       = "${var.queue_name}-${terraform.workspace}"
   visibility_timeout_seconds = var.visibility_timeout_seconds
-  redrive_policy             = var.attach_dead_letter_config ? data.template_file.regular_queue_redrive_policy[count.index].rendered : null
+  redrive_policy             = var.attach_dead_letter_config ? templatefile(
+  "${path.module}/queue-redrive-policy.json.tpl", {
+    dead_letter_target_arn = aws_sqs_queue.dead_letter_queue[count.index].arn
+    max_receive_count      = var.max_receive_count
+  }) : null
   receive_wait_time_seconds  = var.receive_wait_time_seconds
   message_retention_seconds  = var.message_retention_seconds
 
